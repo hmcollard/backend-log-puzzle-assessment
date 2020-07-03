@@ -26,8 +26,17 @@ def read_urls(filename):
     extracting the hostname from the filename itself, sorting
     alphabetically in increasing order, and screening out duplicates.
     """
-    # +++your code here+++
-    pass
+    url_list = []
+    with open(filename, 'r') as f:
+        text = f.readlines()
+    for line in text:
+        match = re.search(r'GET (\S+\/puzzle\/\S+) HTTP', line)
+        if match:
+            url_list.append(match.group(1))
+    # f.close()
+    url_list = sorted(list(dict.fromkeys(url_list)))
+    return url_list
+
 
 
 def download_images(img_urls, dest_dir):
@@ -38,8 +47,19 @@ def download_images(img_urls, dest_dir):
     to show each local image file.
     Creates the directory if necessary.
     """
-    # +++your code here+++
-    pass
+    os.makedirs(dest_dir)
+    for img in enumerate(img_urls):
+        dest_dir, headers = urllib.request.urlretrieve(img, dest_dir)
+        os.rename(img, 'img'+i)
+        print('Retrieving...')
+    images = os.listdir()
+    with open(dest_dir+'/index.html', 'w') as f:
+        f.write('<html><body>')
+        for img in images:
+            f.write(f'<img src="{dest_dir}/{img}">')
+        f.write('</body></html>')
+
+    
 
 
 def create_parser():
