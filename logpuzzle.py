@@ -26,20 +26,22 @@ def read_urls(filename):
     extracting the hostname from the filename itself, sorting
     alphabetically in increasing order, and screening out duplicates.
     """
-    url_list = []
+    url_dict = {}
+    puzzle_list = []
     with open(filename, 'r') as f:
         text = f.readlines()
     for line in text:
-        match = re.search(r'GET (\S+\/puzzle\/\S+) HTTP', line)
+        match = re.search(r'GET (\S+\/puzzle\/(?:\S+)(-\w{4}.jpg)) HTTP', line)
         if match:
-            url_list.append(match.group(1))
-    # f.close()
-    url_list = sorted(list(dict.fromkeys(url_list)))
-    return url_list
+            match_groups = match.groups()
+            url_dict[match_groups[1]] = match_groups[0]
+    url_list = sorted(url_dict.items())
+    for url in url_list:
+        puzzle_list.append(url[1])
+    return puzzle_list
 
 
-
-def download_images(img_urls, dest_dir):
+def download_images(img_urls, dest_dir, source):
     """Given the URLs already in the correct order, downloads
     each image into the given directory.
     Gives the images local filenames img0, img1, and so on.
@@ -48,18 +50,16 @@ def download_images(img_urls, dest_dir):
     Creates the directory if necessary.
     """
     os.makedirs(dest_dir)
-    for img in enumerate(img_urls):
-        dest_dir, headers = urllib.request.urlretrieve(img, dest_dir)
-        os.rename(img, 'img'+i)
-        print('Retrieving...')
-    images = os.listdir()
     with open(dest_dir+'/index.html', 'w') as f:
         f.write('<html><body>')
-        for img in images:
-            f.write(f'<img src="{dest_dir}/{img}">')
+        for i, url in enumerate(img_urls):
+            local_filename = f'img{str(i)}'
+            print('Retrieving...')
+            urllib.request.urlretrieve(
+                f'http://{source}{url}',
+                os.path.join(dest_dir, local_filename))
+            f.write(f'<img src="{local_filename}">')
         f.write('</body></html>')
-
-    
 
 
 def create_parser():
@@ -82,10 +82,12 @@ def main(args):
 
     parsed_args = parser.parse_args(args)
 
+    source = parsed_args.logfile.split('_')
+
     img_urls = read_urls(parsed_args.logfile)
 
     if parsed_args.todir:
-        download_images(img_urls, parsed_args.todir)
+        download_images(img_urls, parsed_args.todir, source[1])
     else:
         print('\n'.join(img_urls))
 
